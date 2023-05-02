@@ -1,10 +1,9 @@
 import random
 from typing import Tuple
 
-from utils.simple_model import Blackwater, HidingStrategy, SearchStrategy, Hideout
+from utils.simple_model import (Blackwater, Hideout, HidingStrategy,
+                                SearchStrategy)
 
-
-hideouts = (1, 2, 3, 4, 5)
 
 class RandomSearch(SearchStrategy):
     def next_watchpost(self) -> Hideout:
@@ -25,6 +24,9 @@ class PickOneAndHide(HidingStrategy):
             self.hideout = random.choice(self.possible_hideouts)
             return self.hideout
     
+
+hideouts = (1, 2, 3, 4, 5)
+
 
 sheriff = RandomSearch()
 outlaw = PickOneAndHide()
