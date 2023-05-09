@@ -14,16 +14,15 @@ class RandomSearch(SearchStrategy):
 
 
 class PickOneAndHide(HidingStrategy):
+    def __init__(self, possible_hideouts) -> None:
+        super().__init__(possible_hideouts)
+        self.hideout = random.choice(self.possible_hideouts)
+
     def next_hideout(self) -> Hideout:
         """Pick hiding location and always hide there.
         """
-
-        try:
-            return self.hideout
-
-        except AttributeError:
-            self.hideout = random.choice(self.possible_hideouts)
-            return self.hideout
+        
+        return self.hideout
 
 
 class RandomHiding(HidingStrategy):
@@ -42,5 +41,4 @@ if __name__ == "__main__":
     outlaw = PickOneAndHide
     blackwater = Blackwater(sheriff, outlaw, possible_hideouts=hideouts)
 
-    print(blackwater.simulate())
-    blackwater.histogram(100_000)
+    blackwater.histogram(10_000)
