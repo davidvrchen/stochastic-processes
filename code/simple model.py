@@ -11,6 +11,10 @@ class RandomSearch(SearchStrategy):
         """
 
         return random.choice(self.possible_hideouts)
+    
+    
+    def __repr__(self) -> str:
+        return "Random search strategy"
 
 
 class PickOneAndHide(HidingStrategy):
@@ -18,11 +22,16 @@ class PickOneAndHide(HidingStrategy):
         super().__init__(possible_hideouts)
         self.hideout = random.choice(self.possible_hideouts)
 
+
     def next_hideout(self) -> Hideout:
         """Pick hiding location and always hide there.
         """
         
         return self.hideout
+    
+
+    def __repr__(self) -> str:
+        return f"Pick one and hide strategy (hiding at {self.hideout})"
 
 
 class RandomHiding(HidingStrategy):
@@ -31,14 +40,18 @@ class RandomHiding(HidingStrategy):
         """
 
         return random.choice(self.possible_hideouts)
+    
+
+    def __repr__(self) -> str:
+        return "Random hiding strategy"
 
 
 if __name__ == "__main__":
 
     hideouts = (1, 2, 3, 4, 5)
 
-    sheriff = RandomSearch
-    outlaw = PickOneAndHide
-    blackwater = Blackwater(sheriff, outlaw, possible_hideouts=hideouts)
+    blackwater1 = Blackwater(RandomSearch, PickOneAndHide, possible_hideouts=hideouts)
+    blackwater2 = Blackwater(RandomSearch, RandomHiding, possible_hideouts=hideouts)
 
-    blackwater.histogram(10_000)
+    blackwater1.histogram(10_000)
+    blackwater2.histogram(10_000)

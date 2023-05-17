@@ -4,10 +4,15 @@ from typing import Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 
+import networkx as nx
+
+
 Hideout = int
 
+
 class SearchStrategy(ABC):
-    def __init__(self, possible_hideouts) -> None:
+    def __init__(self, 
+                 possible_hideouts: nx.DiGraph) -> None:
         self.possible_hideouts = possible_hideouts
 
     @abstractmethod
@@ -21,7 +26,8 @@ class SearchStrategy(ABC):
 
 
 class HidingStrategy(ABC):
-    def __init__(self, possible_hideouts) -> None:
+    def __init__(self, 
+                 possible_hideouts: nx.DiGraph) -> None:
         self.possible_hideouts = possible_hideouts
 
 
@@ -35,8 +41,11 @@ class HidingStrategy(ABC):
         """
 
 
-class Blackwater:
-    def __init__(self, sheriff_strategy: SearchStrategy, outlaw_strategy: HidingStrategy, possible_hideouts: Tuple[Hideout]) -> None:
+class BlackwaterGraphBased(ABC):
+    def __init__(self, 
+                 sheriff_strategy: SearchStrategy, 
+                 outlaw_strategy: HidingStrategy, 
+                 possible_hideouts: nx.DiGraph) -> None:
         self.sheriff = sheriff_strategy(possible_hideouts)
         self.outlaw = outlaw_strategy(possible_hideouts)
         self.possibel_hideouts = possible_hideouts
@@ -85,4 +94,3 @@ class Blackwater:
         plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
         
         plt.show()
-
