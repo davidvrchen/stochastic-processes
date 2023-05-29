@@ -1,51 +1,60 @@
-from abc import ABC, abstractmethod
-from typing import Tuple
-
 import matplotlib.pyplot as plt
 import numpy as np
-
 import networkx as nx
 
+from .plots import COLORS
 
 Hideout = int
 
 
-class SearchStrategy(ABC):
-    def __init__(self, possible_hideouts: nx.DiGraph) -> None:
-        self.possible_hideouts = possible_hideouts
+def is_transition_matrix(matrix: np.matrix) -> bool:
+    """Checks if the matrix is a valid transition matrix,
+    i.e. if the rows sum up to 1."""
 
-    @abstractmethod
-    def next_watchpost(self) -> Hideout:
-        """Return the next house to be surveiled by the sheriff."""
+    return all(np.sum(row) == 1 for row in matrix)
+
+
+class RandomGraphWalker:
+    def __init__(self, transition_matrix) -> None:
+
+        assert is_transition_matrix(transition_matrix), "not a valid transition matrix"
+
+        if type(transition_matrix) != np.matrix:
+            transition_matrix = np.array(transition_matrix)
+
+        self.transition_matrix = transition_matrix
+        self.graph = nx.DiGraph(self.transition_matrix, create_using=nx.DiGraph)
+
+        self.number_of_hideouts = len(self.transition_matrix)
+        self.hideouts = np.arange(0, self.number_of_hideouts, 1)
+        self.position = np.random.randint(0, self.number_of_hideouts - 1)
 
     def __repr__(self) -> str:
-        return "Base class for the sheriff searching strategy."
+        return "Traverse Blackwater non-uniformly using transition matrix."
 
-
-class HidingStrategy(ABC):
-    def __init__(self, possible_hideouts: nx.DiGraph) -> None:
-        self.possible_hideouts = possible_hideouts
-
-    def __repr__(self) -> str:
-        return "Base class for the outlaw hiding strategy."
-
-    @abstractmethod
     def next_hideout(self) -> Hideout:
-        """Return the next hideout for the outlaw."""
+        """Return the next house to be surveiled by the sheriff."""
+        self.position = np.random.choice(
+            self.hideouts, p=self.transition_matrix[self.position]
+        )
+
+        return self.position
 
 
-class BlackwaterGraphBased(ABC):
+class Blackwater:
     def __init__(
         self,
-        sheriff_strategy: SearchStrategy,
-        outlaw_strategy: HidingStrategy,
-        possible_hideouts: nx.DiGraph,
+        cop: RandomGraphWalker,
+        robber: RandomGraphWalker,
     ) -> None:
         """Simulates the inhomgeneous transition probabilities."""
 
-        self.sheriff = sheriff_strategy(possible_hideouts)
-        self.outlaw = outlaw_strategy(possible_hideouts)
-        self.possibel_hideouts = possible_hideouts
+        assert (
+            cop.number_of_hideouts == robber.number_of_hideouts
+        ), "cop and robber have different hideouts"
+
+        self.cop = cop
+        self.robber = robber
 
     def __repr__(self) -> str:
         return "Blackwater, a small town in the Wild West."
@@ -53,8 +62,8 @@ class BlackwaterGraphBased(ABC):
     def caught_next_day(self) -> bool:
         """Progress one day."""
 
-        watchpost = self.sheriff.next_watchpost()
-        hideout = self.outlaw.next_hideout()
+        watchpost = self.cop.next_hideout()
+        hideout = self.robber.next_hideout()
 
         if hideout == watchpost:
             return True
@@ -79,7 +88,7 @@ class BlackwaterGraphBased(ABC):
         plt.grid(axis="y", alpha=0.75)
         plt.xlabel("# Days")
         plt.ylabel("Count")
-        title = f"{self.sheriff.__repr__()} vs {self.outlaw.__repr__()}"
+        title = f"{self.cop.__repr__()} vs {self.robber.__repr__()}"
         plt.title(title)
 
         maxfreq = n.max()
