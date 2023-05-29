@@ -31,4 +31,4 @@ if __name__ == "__main__":
 
     blackwater = Blackwater(cop=cop, robber=robber)
 
-    blackwater.histogram(10_000, fit=True)
+    blackwater.histogram(1_000_000, fit=True)

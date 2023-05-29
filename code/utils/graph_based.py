@@ -118,5 +118,6 @@ class Blackwater:
         if title:
             title = f"{self.cop.__repr__()} vs {self.robber.__repr__()}"
             plt.title(title)
-
+        plt.legend()
+        # plt.savefig("implementation_test.pdf", bbox_inches="tight")
         plt.show()
