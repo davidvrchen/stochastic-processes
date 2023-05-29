@@ -78,21 +78,45 @@ class Blackwater:
 
         return days
 
-    def histogram(self, n):
-        trials = [self.simulate() for _ in range(n)]
+    def histogram(self, trials, title: bool = False, fit: bool = False):
+        trials = [self.simulate() for _ in range(trials)]
         bins = range(max(trials) + 1)
 
-        n, bins, patches = plt.hist(
-            x=trials, bins=bins, color="#0504aa", alpha=0.7, rwidth=0.85
-        )
-        plt.grid(axis="y", alpha=0.75)
-        plt.xlabel("# Days")
-        plt.ylabel("Count")
-        title = f"{self.cop.__repr__()} vs {self.robber.__repr__()}"
-        plt.title(title)
+        ax = plt.gca()
 
-        maxfreq = n.max()
-        # Set a clean upper y-axis limit.
-        plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
+        n, bins, patches = plt.hist(
+            x=trials,
+            bins=bins,
+            density=True,
+            alpha=0.7,
+            label="Simulation",
+        )
+
+        plt.grid(axis="y", alpha=0.75)
+        plt.xlabel("Number Of Days")
+        plt.ylabel("Relative Count")
+        plt.legend()
+        plt.ylim(ymax=n.max() * 1.05)
+
+        if fit:
+
+            def geo_dist(days, n):
+                p = 1 / n
+                return p * np.power(1 - p, days)
+
+            ax = plt.gca()
+
+            ax.plot(
+                bins + 0.5,
+                geo_dist(bins, self.cop.number_of_hideouts),
+                color=COLORS[2],
+                linestyle="",
+                marker="o",
+                label="Geometric distribution",
+            )
+
+        if title:
+            title = f"{self.cop.__repr__()} vs {self.robber.__repr__()}"
+            plt.title(title)
 
         plt.show()
