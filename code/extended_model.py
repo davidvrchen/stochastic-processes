@@ -1,9 +1,8 @@
 import networkx as nx
 import numpy as np
 
-from utils.graph_based import Blackwater, RandomGraphWalker
 import utils.plots
-
+from utils.graph_based import Blackwater, RandomGraphWalker
 
 # transition_matrix_cop = [[0.4, 0.6], [0.1, 0.9]]
 # transition_matrix_robber = [[0.4, 0.6], [0.1, 0.9]]
@@ -19,6 +18,7 @@ def uniform_matrix(number_of_hideouts):
         for _ in range(number_of_hideouts)
     ]
 
+i3 = np.identity(3)
 
 n = 3
 transition_matrix_cop = uniform_matrix(n)
@@ -31,4 +31,4 @@ if __name__ == "__main__":
 
     blackwater = Blackwater(cop=cop, robber=robber)
 
-    blackwater.histogram(1_000_000, fit=True)
+    blackwater.histogram(1, 2, 10_000, fit=True)

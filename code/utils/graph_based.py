@@ -1,6 +1,8 @@
+from typing import Tuple
+
 import matplotlib.pyplot as plt
-import numpy as np
 import networkx as nx
+import numpy as np
 
 from .plots import COLORS
 
@@ -19,7 +21,7 @@ class RandomGraphWalker:
 
         assert is_transition_matrix(transition_matrix), "not a valid transition matrix"
 
-        if type(transition_matrix) != np.matrix:
+        if not isinstance(transition_matrix, np.matrix):
             transition_matrix = np.array(transition_matrix)
 
         self.transition_matrix = transition_matrix
@@ -27,10 +29,14 @@ class RandomGraphWalker:
 
         self.number_of_hideouts = len(self.transition_matrix)
         self.hideouts = np.arange(0, self.number_of_hideouts, 1)
-        self.position = np.random.randint(0, self.number_of_hideouts - 1)
+
+        self.position = None
 
     def __repr__(self) -> str:
         return "Traverse Blackwater non-uniformly using transition matrix."
+    
+    def set_position(self, position):
+        self.position = position
 
     def next_hideout(self) -> Hideout:
         """Return the next house to be surveiled by the sheriff."""
@@ -70,27 +76,34 @@ class Blackwater:
 
         return False
 
-    def simulate(self) -> int:
+    def simulate(self, initial_cop, initial_robber) -> Tuple[int, Hideout]:
+
+        self.cop.set_position(initial_cop)
+        self.robber.set_position(initial_robber)
+
         days = 0
 
         while not self.caught_next_day():
             days += 1
 
-        return days
+        return (days, self.cop.position)
 
-    def histogram(self, trials, title: bool = False, fit: bool = False):
-        trials = [self.simulate() for _ in range(trials)]
-        bins = range(max(trials) + 1)
+    def histogram(self, initial_cop, initial_robber, trials, title: bool = False, fit: bool = False, save: str = "", show: bool = True):
+
+        trials = [self.simulate(initial_cop, initial_robber) for _ in range(trials)]
+        days, positions = zip(*trials)
+        bins = range(max(days) + 1)
 
         ax = plt.gca()
 
         n, bins, patches = plt.hist(
-            x=trials,
+            x=days,
             bins=bins,
             density=True,
             alpha=0.7,
             label="Simulation",
         )
+
 
         plt.grid(axis="y", alpha=0.75)
         plt.xlabel("Number Of Days")
@@ -98,14 +111,13 @@ class Blackwater:
         plt.legend()
         plt.ylim(ymax=n.max() * 1.05)
 
-        if fit:
 
+        if fit:
             def geo_dist(days, n):
                 p = 1 / n
                 return p * np.power(1 - p, days)
 
             ax = plt.gca()
-
             ax.plot(
                 bins + 0.5,
                 geo_dist(bins, self.cop.number_of_hideouts),
@@ -116,8 +128,13 @@ class Blackwater:
             )
 
         if title:
-            title = f"{self.cop.__repr__()} vs {self.robber.__repr__()}"
+            title = f"Initial positions; cop: {initial_cop}, robber: {initial_robber}"
             plt.title(title)
+
         plt.legend()
-        # plt.savefig("implementation_test.pdf", bbox_inches="tight")
-        plt.show()
+
+        if save:
+            plt.savefig(save, bbox_inches="tight")
+
+        if show:
+            plt.show()
