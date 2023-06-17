@@ -1,19 +1,26 @@
-from typing import Tuple
+from typing import Tuple, List
+from itertools import permutations, chain
 
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import pandas as pd
+
 
 from .plots import COLORS
-
-Hideout = int
 
 
 def is_transition_matrix(matrix: np.matrix) -> bool:
     """Checks if the matrix is a valid transition matrix,
     i.e. if the rows sum up to 1."""
 
-    return all(np.sum(row) == 1 for row in matrix)
+    return all(np.sum(row) == 1 for row in matrix) and all(
+        all(entry >= 0 for entry in row) for row in matrix
+    )
+
+
+Hideout = int
+Data = List[int]
 
 
 class RandomGraphWalker:
@@ -34,12 +41,15 @@ class RandomGraphWalker:
 
     def __repr__(self) -> str:
         return "Traverse Blackwater non-uniformly using transition matrix."
-    
+
     def set_position(self, position):
+        """Set the position of the graph walker."""
+
         self.position = position
 
     def next_hideout(self) -> Hideout:
         """Return the next house to be surveiled by the sheriff."""
+
         self.position = np.random.choice(
             self.hideouts, p=self.transition_matrix[self.position]
         )
@@ -49,9 +59,7 @@ class RandomGraphWalker:
 
 class Blackwater:
     def __init__(
-        self,
-        cop: RandomGraphWalker,
-        robber: RandomGraphWalker,
+        self, cop: RandomGraphWalker, robber: RandomGraphWalker, name: str
     ) -> None:
         """Simulates the inhomgeneous transition probabilities."""
 
@@ -62,21 +70,29 @@ class Blackwater:
         self.cop = cop
         self.robber = robber
 
+        self.number_of_hideouts = self.cop.number_of_hideouts
+
+        self.name = name
+
     def __repr__(self) -> str:
         return "Blackwater, a small town in the Wild West."
 
     def caught_next_day(self) -> bool:
-        """Progress one day."""
+        """Move both cop and robber and return True if they are in the same house
+        otherwise return False."""
+
+        assert (
+            self.robber.position != self.cop.position
+        ), "cop and robber already in same house"
 
         watchpost = self.cop.next_hideout()
         hideout = self.robber.next_hideout()
 
-        if hideout == watchpost:
-            return True
-
-        return False
+        return hideout == watchpost
 
     def simulate(self, initial_cop, initial_robber) -> Tuple[int, Hideout]:
+        """Set position of both cop and robber, then simulate the
+        man-hunt untill the robber is caught."""
 
         self.cop.set_position(initial_cop)
         self.robber.set_position(initial_robber)
@@ -88,14 +104,31 @@ class Blackwater:
 
         return (days, self.cop.position)
 
-    def histogram(self, initial_cop, initial_robber, trials, title: bool = False, fit: bool = False, save: str = "", show: bool = True):
+    def extract_data(self, initial_cop, initial_robber, trials) -> Tuple[Data, Data]:
+        """Extract data on how many days it took for the robber to be caught,
+        keep track of where the robber is caught."""
 
         trials = [self.simulate(initial_cop, initial_robber) for _ in range(trials)]
         days, positions = zip(*trials)
+        return days, positions
+
+    def histogram(
+        self,
+        initial_cop: Hideout,
+        initial_robber: Hideout,
+        trials: int = 10_000,
+        title: bool = False,
+        fit: bool = False,
+        save: bool = False,
+        show: bool = True,
+    ):
+        """Make a single histogram"""
+
+        days, positions = self.extract_data(initial_cop, initial_robber, trials)
+
         bins = range(max(days) + 1)
-
+        plt.cla()
         ax = plt.gca()
-
         n, bins, patches = plt.hist(
             x=days,
             bins=bins,
@@ -104,15 +137,14 @@ class Blackwater:
             label="Simulation",
         )
 
-
         plt.grid(axis="y", alpha=0.75)
         plt.xlabel("Number Of Days")
         plt.ylabel("Relative Count")
         plt.legend()
         plt.ylim(ymax=n.max() * 1.05)
 
-
         if fit:
+
             def geo_dist(days, n):
                 p = 1 / n
                 return p * np.power(1 - p, days)
@@ -134,7 +166,193 @@ class Blackwater:
         plt.legend()
 
         if save:
-            plt.savefig(save, bbox_inches="tight")
+            plt.savefig(
+                f"plots/{self.name}/histogram_ic{initial_cop}_ir{initial_robber}.pdf",
+                bbox_inches="tight",
+            )
 
         if show:
             plt.show()
+
+        return days, positions
+
+    def caught_in_n_days(
+        self,
+        n: int = 7,
+        initial_cop: Hideout = 0,
+        initial_robber: Hideout = 1,
+        trials: int = 10_000,
+    ) -> float:
+        """Calculate the probability of catching the robber in n days."""
+
+        def caught_cnt_rec(n: int):
+            if n < 1:
+                return False
+            elif self.caught_next_day():
+                return True
+            return caught_cnt_rec(n - 1)
+
+        def init_rec(initial_cop: Hideout, initial_robber: Hideout, n: int):
+            """Initialize the recursion to count the number of days."""
+
+            self.cop.set_position(initial_cop)
+            self.robber.set_position(initial_robber)
+
+            return caught_cnt_rec(n)
+
+        data = [init_rec(initial_cop, initial_robber, n) for _ in range(trials)]
+
+        return sum(data) / len(data)
+
+    def house_histogram(
+        self,
+        initial_cop,
+        initial_robber,
+        positions,
+        verbose: bool,
+        save: bool,
+        clear: bool = True,
+    ):
+        """Create a histogram showing in which house the robber was caught"""
+        if clear:
+            plt.cla()
+        plt.bar(
+            range(1, self.number_of_hideouts + 1),
+            np.histogram(positions, bins=3)[0]
+            / np.histogram(positions, bins=3)[0].sum(),
+            alpha=0.7,
+            label="Simulation",
+        )
+
+        plt.grid(axis="y", alpha=0.75)
+        ax = plt.gca()
+        ax.set_xticks([1, 2, 3])
+        plt.xlabel("House")
+        plt.ylabel("Relative Count")
+        plt.legend()
+        plt.legend()
+
+        if verbose:
+            plt.show()
+
+        if save:
+            plt.savefig(
+                f"plots/{self.name}/catching_house_ic{initial_cop}_ir{initial_robber}.pdf",
+                bbox_inches="tight",
+            )
+
+    def compile_results(self, n: int = 7, save: bool = True, verbose: bool = False):
+        """Run all the different simulations and possibly save the results."""
+
+        initial_position_permutations = list(
+            permutations(range(self.number_of_hideouts), 2)
+        )
+
+        # histograms
+        if verbose:
+            print("creating histograms")
+
+        combined_days, combined_positions = [], []
+        for initial_cop, initial_robber in initial_position_permutations:
+            days, positions = self.histogram(
+                initial_cop=initial_cop,
+                initial_robber=initial_robber,
+                save=save,
+                show=verbose,
+            )
+
+            combined_days.append(days)
+            combined_positions.append(positions)
+
+            if verbose:
+                print("...")
+
+        dayss = list(chain(*combined_days))
+
+        bins = range(max(days) + 1)
+        plt.cla()
+        m, bins, patches = plt.hist(
+            x=dayss,
+            bins=bins,
+            density=True,
+            alpha=0.7,
+            label="Simulation",
+        )
+
+        plt.grid(axis="y", alpha=0.75)
+        plt.xlabel("Number Of Days")
+        plt.ylabel("Relative Count")
+        plt.legend()
+        plt.ylim(ymax=m.max() * 1.05)
+        plt.legend()
+
+        if verbose:
+            plt.show()
+
+        if save:
+            plt.savefig(
+                f"plots/{self.name}/histogram_combined.pdf",
+                bbox_inches="tight",
+            )
+
+        # caught in which house
+        if verbose:
+            print("processing data to find distribution where robber was caught")
+
+        for i, data in enumerate(combined_positions):
+            initial_cop, initial_robber = initial_position_permutations[i]
+            self.house_histogram(initial_cop, initial_robber, data, verbose, save)
+
+            if verbose:
+                print("...")
+
+        positionss = list(chain(*combined_positions))
+        plt.cla()
+        plt.bar(
+            range(1, self.number_of_hideouts + 1),
+            np.histogram(positionss, bins=3)[0]
+            / np.histogram(positionss, bins=3)[0].sum(),
+            alpha=0.7,
+            label="Simulation",
+        )
+
+        plt.grid(axis="y", alpha=0.75)
+        ax = plt.gca()
+        ax.set_xticks([1, 2, 3])
+        plt.xlabel("House")
+        plt.ylabel("Relative Count")
+        plt.legend()
+        plt.legend()
+
+        if verbose:
+            plt.show()
+
+        if save:
+            plt.savefig(
+                f"plots/{self.name}/catching_house_combined.pdf",
+                bbox_inches="tight",
+            )
+
+        # calculate 7 day, catching probability
+        if verbose:
+            print(f"calculating {n} day catching probability")
+
+        catching_probabilities = []
+        for initial_cop, initial_robber in initial_position_permutations:
+            catching_probabilities.append(
+                self.caught_in_n_days(
+                    n=n, initial_cop=initial_cop, initial_robber=initial_robber
+                )
+            )
+
+            if verbose:
+                print("...")
+
+        cathcing_probability = np.average(catching_probabilities)
+        dataframe = pd.DataFrame(
+            {f"{n}_day_catching_probability": cathcing_probability}, index=[1]
+        )
+        dataframe.to_csv(f"plots/{self.name}/{n}_day_catching_probability.csv")
+
+        if verbose:
+            print(f"{n} day catching probability is: {cathcing_probability}")
