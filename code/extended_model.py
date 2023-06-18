@@ -49,8 +49,8 @@ if __name__ == "__main__":
     blackwater_argmax = Blackwater(cop=cop_argmax, robber=robber, name="argmax")
     blackwater_stationary_distr = Blackwater(cop=cop_stationary_distr, robber=robber, name="stationary_distr")
 
-    blackwater_uniform.compile_results(save=True, verbose=False)
-    blackwater_copy_robber.compile_results(save=True, verbose=False)
-    blackwater_random.compile_results(save=True, verbose=False)
-    blackwater_argmax.compile_results(save=True, verbose=False)
-    blackwater_stationary_distr.compile_results(save=True, verbose=False)
+    blackwater_uniform.compile_results(save=True, verbose=True)
+    blackwater_copy_robber.compile_results(save=True, verbose=True)
+    blackwater_random.compile_results(save=True, verbose=True)
+    blackwater_argmax.compile_results(save=True, verbose=True)
+    blackwater_stationary_distr.compile_results(save=True, verbose=True)

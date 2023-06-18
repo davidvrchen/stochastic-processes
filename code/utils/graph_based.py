@@ -102,7 +102,7 @@ class Blackwater:
         while not self.caught_next_day():
             days += 1
 
-        return (days, self.cop.position)
+        return (days, self.cop.position + 1)
 
     def extract_data(self, initial_cop, initial_robber, trials) -> Tuple[Data, Data]:
         """Extract data on how many days it took for the robber to be caught,
@@ -116,11 +116,10 @@ class Blackwater:
         self,
         initial_cop: Hideout,
         initial_robber: Hideout,
-        trials: int = 10_000,
+        trials: int = 1_000_000,
         title: bool = False,
         fit: bool = False,
         save: bool = False,
-        show: bool = True,
     ):
         """Make a single histogram"""
 
@@ -171,9 +170,6 @@ class Blackwater:
                 bbox_inches="tight",
             )
 
-        if show:
-            plt.show()
-
         return days, positions
 
     def caught_in_n_days(
@@ -181,7 +177,7 @@ class Blackwater:
         n: int = 7,
         initial_cop: Hideout = 0,
         initial_robber: Hideout = 1,
-        trials: int = 10_000,
+        trials: int = 1_000_000,
     ) -> float:
         """Calculate the probability of catching the robber in n days."""
 
@@ -209,7 +205,6 @@ class Blackwater:
         initial_cop,
         initial_robber,
         positions,
-        verbose: bool,
         save: bool,
         clear: bool = True,
     ):
@@ -231,9 +226,6 @@ class Blackwater:
         plt.ylabel("Relative Count")
         plt.legend()
         plt.legend()
-
-        if verbose:
-            plt.show()
 
         if save:
             plt.savefig(
@@ -258,7 +250,6 @@ class Blackwater:
                 initial_cop=initial_cop,
                 initial_robber=initial_robber,
                 save=save,
-                show=verbose,
             )
 
             combined_days.append(days)
@@ -286,9 +277,6 @@ class Blackwater:
         plt.ylim(ymax=m.max() * 1.05)
         plt.legend()
 
-        if verbose:
-            plt.show()
-
         if save:
             plt.savefig(
                 f"plots/{self.name}/histogram_combined.pdf",
@@ -301,7 +289,7 @@ class Blackwater:
 
         for i, data in enumerate(combined_positions):
             initial_cop, initial_robber = initial_position_permutations[i]
-            self.house_histogram(initial_cop, initial_robber, data, verbose, save)
+            self.house_histogram(initial_cop, initial_robber, data, save)
 
             if verbose:
                 print("...")
@@ -323,9 +311,6 @@ class Blackwater:
         plt.ylabel("Relative Count")
         plt.legend()
         plt.legend()
-
-        if verbose:
-            plt.show()
 
         if save:
             plt.savefig(
