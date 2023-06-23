@@ -1,11 +1,10 @@
-from typing import Tuple, List
-from itertools import permutations, chain
+from itertools import chain, permutations
+from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import pandas as pd
-
 
 from .plots import COLORS
 
@@ -102,6 +101,7 @@ class Blackwater:
         while not self.caught_next_day():
             days += 1
 
+        # print(self.cop.position + 1)
         return (days, self.cop.position + 1)
 
     def extract_data(self, initial_cop, initial_robber, trials) -> Tuple[Data, Data]:
@@ -116,7 +116,7 @@ class Blackwater:
         self,
         initial_cop: Hideout,
         initial_robber: Hideout,
-        trials: int = 1_000_000,
+        trials: int = 10_000,
         title: bool = False,
         fit: bool = False,
         save: bool = False,
@@ -174,10 +174,10 @@ class Blackwater:
 
     def caught_in_n_days(
         self,
-        n: int = 7,
+        n: int = 4,
         initial_cop: Hideout = 0,
         initial_robber: Hideout = 1,
-        trials: int = 1_000_000,
+        trials: int = 10_000,
     ) -> float:
         """Calculate the probability of catching the robber in n days."""
 
@@ -211,10 +211,11 @@ class Blackwater:
         """Create a histogram showing in which house the robber was caught"""
         if clear:
             plt.cla()
+
+        y = list(range(1, self.number_of_hideouts + 1))
         plt.bar(
-            range(1, self.number_of_hideouts + 1),
-            np.histogram(positions, bins=3)[0]
-            / np.histogram(positions, bins=3)[0].sum(),
+            y,
+            [positions.count(pos)/len(positions) for pos in y],
             alpha=0.7,
             label="Simulation",
         )
@@ -233,7 +234,7 @@ class Blackwater:
                 bbox_inches="tight",
             )
 
-    def compile_results(self, n: int = 7, save: bool = True, verbose: bool = False):
+    def compile_results(self, n: int = 4, save: bool = True, verbose: bool = False):
         """Run all the different simulations and possibly save the results."""
 
         initial_position_permutations = list(
@@ -318,7 +319,7 @@ class Blackwater:
                 bbox_inches="tight",
             )
 
-        # calculate 7 day, catching probability
+        # calculate n day, catching probability
         if verbose:
             print(f"calculating {n} day catching probability")
 
@@ -333,11 +334,11 @@ class Blackwater:
             if verbose:
                 print("...")
 
-        cathcing_probability = np.average(catching_probabilities)
+        catching_probability = np.average(catching_probabilities)
         dataframe = pd.DataFrame(
-            {f"{n}_day_catching_probability": cathcing_probability}, index=[1]
+            {f"{n}_day_catching_probability": catching_probabilities + [catching_probability]}
         )
         dataframe.to_csv(f"plots/{self.name}/{n}_day_catching_probability.csv")
 
         if verbose:
-            print(f"{n} day catching probability is: {cathcing_probability}")
+            print(f"{n} day catching probability is: {catching_probabilities}")
